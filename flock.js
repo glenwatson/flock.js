@@ -160,22 +160,23 @@ var flockApp = function() {
     /* Update each of the boid's vectors and position on the canvas. */
     var updateFlock = function () {
         clearCanvas();
+        var tree = new kdTree(flock, distance, ["x", "y"]);
         $.each(flock, function(i, boid) {
 
-            /* Find local boids. Fun O(n^2) times! */
-            var locals = [];
+            var localCount = 0;
             var averageXHeading = 0;
             var averageYHeading = 0;
-            $.each(flock, function(j, other) {
-                if(distance(boid, other) < options.boidSight) {
-                    locals.push(other);
-                    averageXHeading += Math.cos(other.theta);
-                    averageYHeading += Math.sin(other.theta);
+            $.each(tree.nearest(boid, flock.length, options.boidSight), function(j, other) {
+                //if the boid is not the same (distance is 0),
+                if(other[1] > 0) {
+                    localCount++;
+                    averageXHeading += Math.cos(other[0].theta);
+                    averageYHeading += Math.sin(other[0].theta);
                 }
             });
-            if(locals.length > 0) {
-                averageXHeading /= locals.length;
-                averageYHeading /= locals.length;
+            if(localCount > 0) {
+                averageXHeading /= localCount;
+                averageYHeading /= localCount;
 
                 // Move torwards average local heading.
                 var newYHeading = (averageYHeading + Math.sin(boid.theta))/2;

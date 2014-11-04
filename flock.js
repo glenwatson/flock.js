@@ -6,13 +6,11 @@ var flockApp = function() {
         canvasFrontId: null,
         canvasBackId: null,
         canvasOnClickAddBoid: true,
-        boidSight: 100,
-        boidMinVelocity: 5,
-        boidMaxVelocity: 20,
-        boidTurningLikelihood: 0.05,
+        boidSight: 10,
+        boidMaxVelocity: 2,
         boidStrokeColor: "#fff",
         boidFillColor: "#222",
-        boidSize: 10,
+        boidSize: 20,
         trailStrokeColor: "#444",
         trailFillColor: "#999",
         drawTrail: true,
@@ -117,6 +115,9 @@ var flockApp = function() {
     var randomInt = function (min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
+	var random = function (min, max) {
+        return Math.random() * (max - min) + min;
+    }
 
     /* Resize the canvas to fill the size of it's parent container. */
     var resizeCanvas = function (canvas) {
@@ -146,8 +147,8 @@ var flockApp = function() {
             id: randomInt(0, 1000000),
             x: randomInt(0, frontCanvas.width),
             y: randomInt(0, frontCanvas.height),
-            v: randomInt(options.boidMinVelocity, options.boidMaxVelocity),
-            theta: Math.random() * Math.PI * 2
+            vx: randomInt(-options.boidMaxVelocity, options.boidMaxVelocity),
+            vy: randomInt(-options.boidMaxVelocity, options.boidMaxVelocity),
         };
     }
 
@@ -189,11 +190,11 @@ var flockApp = function() {
                 other = flock[j];
                 if(distance(boid, other) < options.boidSight) {
                     boid.locals++;
-                    boid.averageXHeading += Math.cos(other.theta);
-                    boid.averageYHeading += Math.sin(other.theta);
+                    boid.averageXHeading += other.vx;
+                    boid.averageYHeading += other.vy;
                     other.locals++;
-                    other.averageXHeading += Math.cos(boid.theta);
-                    other.averageYHeading += Math.sin(boid.theta);
+                    other.averageXHeading += boid.vx;
+                    other.averageYHeading += boid.vy;
                 }
             }
         }
@@ -212,28 +213,21 @@ var flockApp = function() {
                 boid.averageYHeading /= boid.locals;
 
                 // Move torwards average local heading.
-                newYHeading = (boid.averageYHeading + Math.sin(boid.theta))/2;
-                newXHeading = (boid.averageXHeading + Math.cos(boid.theta))/2;
-                boid.theta = Math.atan2(newYHeading, newXHeading);
-            }
-
-            // Change directions randomly based on likelihood of doing so.
-            if(Math.random() < options.boidTurningLikelihood){;
-                dtheta = Math.PI / 10;
-                if(Math.random() > 0.5) {
-                    dtheta *= -1;
-                }
-                boid.theta = mod(boid.theta + dtheta, 2 * Math.PI);
+                newYHeading = (boid.averageYHeading + boid.vy)/2;
+                newXHeading = (boid.averageXHeading + boid.vx)/2;
             }
 
             // Speed up or down randomly.
-            boid.v += randomInt(-1, 1);
-            boid.v = Math.min(boid.v, options.boidMaxVelocity);
-            boid.v = Math.max(boid.v, options.boidMinVelocity);
+            boid.vx += random(-.1, .1);
+            boid.vx = Math.min(boid.vx, options.boidMaxVelocity);
+            boid.vx = Math.max(boid.vx, -options.boidMaxVelocity);
+            boid.vy += random(-.1, .1);
+            boid.vy = Math.min(boid.vy, options.boidMaxVelocity);
+            boid.vy = Math.max(boid.vy, -options.boidMaxVelocity);
 
             // Move the boid.
-            boid.x += Math.cos(boid.theta) * boid.v;
-            boid.y += Math.sin(boid.theta) * boid.v;
+            boid.x += boid.vx;
+            boid.y += boid.vy;
 
             // Wrap around the canvas
             boid.x = mod(boid.x, frontCanvas.width);
@@ -248,24 +242,23 @@ var flockApp = function() {
 
         // Find the coordinates of the paper-airplane-shaped boid.
         var l = options.boidSize;
-        var backX = Math.cos(boid.theta) * l * -1;
-        var backY = Math.sin(boid.theta) * l * -1;
-        var backRightX = Math.cos(boid.theta + Math.PI/10) * (l + 2) * -1;
-        var backRightY = Math.sin(boid.theta + Math.PI/10) * (l + 2) * -1;
-        var backLeftX = Math.cos(boid.theta - Math.PI/10) * (l + 2) * -1;
-        var backLeftY = Math.sin(boid.theta - Math.PI/10) * (l + 2) * -1;
 
         // Draw the boid.
-        context.beginPath();
+		context.save();
         context.strokeStyle = options.boidStrokeColor;
         context.fillStyle = options.boidFillColor;
-        context.moveTo(boid.x + backX, boid.y + backY);
-        context.lineTo(boid.x + backRightX, boid.y + backRightY);
-        context.lineTo(boid.x, boid.y);
-        context.lineTo(boid.x + backLeftX, boid.y + backLeftY);
+		var d = boid.vy / boid.vx;
+		context.translate(boid.x+l, boid.y);
+		context.rotate(Math.atan(d) - (boid.vx < 0 ? Math.PI : 0));
+        context.beginPath();
+        context.moveTo(0, 0);
+        context.lineTo(-l * 1.3, l * .4);
+        context.lineTo(-l, 0);
+        context.lineTo(-l * 1.3, -l * .4);
         context.closePath();
         context.stroke();
         context.fill();
+		context.restore();
 
         // Draw the trail, if desired.
         if(options.drawTrail) {
@@ -274,8 +267,8 @@ var flockApp = function() {
             backContext.fillStyle = options.trailFillColor;
             if(!options.drawDotted){
                 backContext.moveTo(boid.x, boid.y);
-                var oldX = boid.x - boid.v * Math.cos(boid.theta);
-                var oldY = boid.y - boid.v * Math.sin(boid.theta);
+                var oldX = boid.x - boid.vx;
+                var oldY = boid.y - boid.vy;
                 backContext.lineTo(oldX, oldY);
             } else {
                 backContext.fillRect(boid.x, boid.y, 1, 1);

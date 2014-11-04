@@ -33,6 +33,8 @@ var flockApp = function() {
 
     /* Maintain our flock of boids. */
     var flock = [];
+    /* Maintain a map of neighbors */
+	var nns;
 
     /* Extend the default options with the user's options and check to ensure
      * that required options were successfully passed in. */
@@ -137,6 +139,7 @@ var flockApp = function() {
         for(var i = 0; i < size; i++){
             flock.push(buildRandomBoid());
         }
+		nns = proximityNns(flock)
         return flock;
     }
 
@@ -179,14 +182,15 @@ var flockApp = function() {
 
 	/* Record each local boid */
 	var findLocals = function () {
-        var i = flock.length, j, other;
+        var i = flock.length, j, other, neighbors;
 		/* find locals */
         while(--i) {
             boid = flock[i];
-            /* Find local boids. Fun O(n^2/2) times! */
-            j = i;
+            /* Find local boids. */
+			neighbors = nns.search(boid, options.boidSight);
+            j = neighbors.length;
             while(--j) {
-                other = flock[j];
+                other = neighbors[j];
                 if(distance(boid, other) < options.boidSight) {
                     boid.locals++;
                     boid.averageXHeading += Math.cos(other.theta);
@@ -241,6 +245,7 @@ var flockApp = function() {
 
             drawboid(frontContext, boid);
         }
+		nns.update();
 	}
 
     /* Draw a boid to the front canvas and it's trail to the back canvas. */

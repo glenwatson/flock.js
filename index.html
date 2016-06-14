@@ -14,13 +14,15 @@
     </div>
 
     <!-- Load and initialize the app. -->
-    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
     <script type="text/javascript" src="flock.js"></script>
     <script type="text/javascript">
         var app = flockApp();
         app.init({
             canvasFrontId: "flock-canvas",
-            canvasBackId: "back-canvas"
+            canvasBackId: "back-canvas",
+			updatePeriod: 1,
+			flockSize: 2000
         });
     </script>
 </body>

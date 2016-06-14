@@ -285,6 +285,32 @@ var flockApp = function() {
         }
     }
 
+    // =fps=
+    var drawFps = (function () {
+        var fps = 0;
+        var frameCount = 0;
+        setInterval(function () {
+            fps = frameCount;
+            frameCount = 0;
+        }, 1000); //1 second
+        return function () {
+            frameCount++;
+            frontContext.fillStyle = "#ffffff";
+            frontContext.fillText(fps+" fps", frontCanvas.width-40, 20);
+        }
+    })();
+    
+    // =framerate=
+    var drawFramerate = (function () {
+        var lastFrame = new Date().getTime();
+        return function () {
+            var thisFrame = new Date().getTime();
+            frontContext.fillStyle = "#ffffff";
+            frontContext.fillText((thisFrame - lastFrame) / 1000, frontCanvas.width-40, 10);
+            lastFrame = thisFrame;
+        }
+    })();
+
     return {
         init: init,
         stop: stop,
